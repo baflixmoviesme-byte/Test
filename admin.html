@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baflix - অ্যাডমিন প্যানেল</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #e50914;
+            --secondary-color: #b81d24;
+            --background-dark: #141414;
+            --background-light: #222;
+            --text-primary: #fff;
+            --text-secondary: #aaa;
+            --green: #28a745;
+            --blue: #007bff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #login-container { width: 100%; max-width: 400px; padding: 20px; }
+        .login-box { background-color: var(--background-light); padding: 40px 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .login-box h1 { text-align: center; color: var(--primary-color); margin-bottom: 30px; font-size: 2rem; }
+        .login-box .form-group { margin-bottom: 25px; }
+        #login-error { color: #ff4d4d; text-align: center; margin-bottom: 15px; display: none; }
+        
+        .sidebar { width: 250px; background-color: var(--background-light); padding: 20px 0; display: flex; flex-direction: column; border-right: 1px solid #333; position: fixed; left: 0; top: 0; height: 100%; z-index: 1100; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        .sidebar.open { transform: translateX(0); }
+        #admin-container { display: none; width: 100%; height: 100vh; }
+        .sidebar-header { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #333; }
+        .sidebar-header h2 { font-size: 1.8rem; color: var(--primary-color); font-weight: 700; }
+        .sidebar-nav { list-style: none; flex-grow: 1; }
+        .sidebar-nav li a { display: flex; align-items: center; gap: 15px; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; transition: background-color 0.3s, color 0.3s; }
+        .sidebar-nav li a:hover, .sidebar-nav li a.active { background-color: var(--primary-color); color: var(--text-primary); }
+        .sidebar-nav li a .fa-fw { width: 20px; }
+        .sidebar-footer { border-top: 1px solid #333; }
+
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; margin-left: 0; width: 100%; transition: margin-left 0.3s ease-in-out; }
+        .content-panel { display: none; }
+        .content-panel.active { display: block; }
+        .content-header { margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        .content-header h1 { font-size: 2rem; }
+        .menu-toggle { display: none; font-size: 1.5rem; background: none; border: none; color: var(--text-primary); cursor: pointer; }
+        
+        .dashboard-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}.stat-card{background-color:var(--background-light);padding:25px;border-radius:8px;display:flex;align-items:center;gap:20px;border-left:5px solid var(--primary-color)}.stat-card .icon{font-size:3rem;color:var(--primary-color)}.stat-card .info h3{font-size:2rem;margin:0}.stat-card .info p{font-size:1rem;color:var(--text-secondary)}
+        .content-category-container { margin-bottom: 30px; }
+        .table-container{background-color:var(--background-light);border-radius:8px;overflow-x:auto;}.table-header{display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:20px;border-bottom:1px solid #333}table{width:100%;border-collapse:collapse;min-width:600px}th,td{padding:15px;text-align:left;border-bottom:1px solid #333}th{font-weight:700;color:var(--text-secondary)}tbody tr:last-child td{border-bottom:none}tbody tr:hover{background-color:#2c2c2c}.status-active{color:var(--green);font-weight:700}.status-inactive,.status-blocked,.status-pending{color:#ffc107;font-weight:700}.status-completed{color:var(--blue);font-weight:700}.btn{padding:10px 18px;border:none;border-radius:5px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .2s,box-shadow .2s}.btn:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,.2)}.btn-primary{background-color:var(--primary-color);color:var(--text-primary)}.btn-secondary{background-color:#6c757d;color:var(--text-primary)}.btn-danger{background-color:#dc3545;color:var(--text-primary)}.btn-success{background-color:var(--green);color:var(--text-primary)}.btn-sm{padding:6px 12px;font-size:.8rem}.modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:none;justify-content:center;align-items:center;z-index:1000}.modal.show{display:flex}.modal-content{background-color:var(--background-light);border-radius:8px;width:95%;max-width:800px;max-height:90vh;display:flex;flex-direction:column}.modal-header{padding:20px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}.modal-header h2{margin:0;font-size:1.5rem}.modal-close-btn{background:0 0;border:none;color:var(--text-primary);font-size:2rem;cursor:pointer}.modal-body{padding:20px;overflow-y:auto}.modal-footer{padding:15px;border-top:1px solid #333;text-align:right;display:flex;justify-content:flex-end;gap:10px}.form-group{margin-bottom:20px}.form-group label{display:block;margin-bottom:8px;color:var(--text-secondary)}.form-control{width:100%;padding:12px;background-color:var(--background-dark);border:1px solid #444;border-radius:5px;color:var(--text-primary);font-size:1rem}textarea.form-control{min-height:120px;resize:vertical}.form-row{display:grid;grid-template-columns:1fr;gap:20px}.dynamic-list-container,#simple-list-container{background-color:var(--background-dark);padding:15px;border-radius:5px;border:1px solid #444}.dynamic-list-item{padding:15px 0;border-bottom:1px dashed #444;margin-bottom:15px}.dynamic-list-item:last-child{border-bottom:none;margin-bottom:0}.dynamic-list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.dynamic-list-header h4,.dynamic-list-header h6{margin:0}#simple-list-container{list-style:none;padding-left:0}#simple-list-container li{display:flex;justify-content:space-between;align-items:center;background-color:#141414;padding:10px 15px;border-radius:5px;margin-bottom:10px}.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1099}
+
+        .content-group { background-color: var(--background-light); border-radius: 8px; margin-bottom: 10px; overflow: hidden; border: 1px solid #333;}
+        .group-header { background-color: #2a2a2a; padding: 15px 20px; width: 100%; border: none; text-align: left; color: var(--text-primary); font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .group-header .fa-chevron-down { transition: transform 0.3s ease; }
+        .group-header.active .fa-chevron-down { transform: rotate(180deg); }
+        .group-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
+        .search-bar-container { padding: 15px 20px; background-color: var(--background-light); border-radius: 8px; margin-top: -1px; margin-bottom: 20px; border-top-left-radius: 0; border-top-right-radius: 0; border: 1px solid #333; border-top: none; }
+        .search-form { display: flex; gap: 10px; }
+        .search-form input { flex-grow: 1; }
+        .search-results-container { display: none; }
+
+        @media (min-width: 768px) { .sidebar { position: relative; transform: translateX(0); } .main-content { margin-left: 250px; padding: 30px; } .menu-toggle { display: none; } .table-header { flex-direction: row; justify-content: space-between; align-items: center; } .form-row { grid-template-columns: 1fr 1fr; } .content-header h1 { font-size: 2.5rem; } }
+        @media (max-width: 767px) { .menu-toggle { display: block; } .overlay.active { display: block; } }
+    </style>
+</head>
+<body>
+    
+    <div id="login-container">
+        <div class="login-box">
+            <h1>অ্যাডমিন লগইন</h1>
+            <form id="login-form">
+                <p id="login-error">Invalid email or password.</p>
+                <div class="form-group"><label for="login-email">ইমেইল</label><input type="email" id="login-email" class="form-control" required></div>
+                <div class="form-group"><label for="login-password">পাসওয়ার্ড</label><input type="password" id="login-password" class="form-control" required></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">লগইন করুন</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="admin-container">
+        <div class="overlay"></div>
+        <aside class="sidebar">
+            <div class="sidebar-header"><h2>Baflix Admin</h2></div>
+            <ul class="sidebar-nav">
+                <li><a href="#" class="nav-link active" data-target="dashboard"><i class="fas fa-tachometer-alt fa-fw"></i> ড্যাশবোর্ড</a></li>
+                <li><a href="#" class="nav-link" data-target="content-management"><i class="fas fa-film fa-fw"></i> কন্টেন্ট ম্যানেজমেন্ট</a></li>
+                <li><a href="#" class="nav-link" data-target="category-management"><i class="fas fa-tags fa-fw"></i> ক্যাটাগরি</a></li>
+                <li><a href="#" class="nav-link" data-target="request-management"><i class="fas fa-inbox fa-fw"></i> রিকোয়েস্ট</a></li>
+                <li><a href="#" class="nav-link" data-target="user-management"><i class="fas fa-users fa-fw"></i> ব্যবহারকারী</a></li>
+                <li><a href="#" class="nav-link" data-target="settings-management"><i class="fas fa-cogs fa-fw"></i> সেটিংস</a></li>
+            </ul>
+            <ul class="sidebar-nav sidebar-footer"><li><a href="#" id="logout-btn"><i class="fas fa-sign-out-alt fa-fw"></i> লগ আউট</a></li></ul>
+        </aside>
+
+        <main class="main-content">
+            <section id="dashboard" class="content-panel active">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>ড্যাশবোর্ড</h1></div>
+                <div class="dashboard-stats">
+                    <div class="stat-card"><div class="icon"><i class="fas fa-video"></i></div><div class="info"><h3 id="total-content-stat">0</h3><p>মোট কন্টেন্ট</p></div></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-users"></i></div><div class="info"><h3 id="total-users-stat">0</h3><p>মোট ব্যবহারকারী</p></div></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-envelope-open-text"></i></div><div class="info"><h3 id="pending-requests-stat">0</h3><p>পেন্ডিং রিকোয়েস্ট</p></div></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-eye"></i></div><div class="info"><h3 id="total-visits-stat">0</h3><p>মোট ভিজিট</p></div></div>
+                    <div class="stat-card"><div class="icon"><i class="fas fa-download"></i></div><div class="info"><h3 id="total-downloads-stat">0</h3><p>মোট ডাউনলোড</p></div></div>
+                </div>
+            </section>
+            <section id="content-management" class="content-panel">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>কন্টেন্ট ম্যানেজমেন্ট</h1></div>
+                <div class="table-header" style="margin-bottom: 20px; background-color: var(--background-light); border-radius: 8px;"><button class="btn btn-primary" id="add-new-content-btn"><i class="fas fa-plus"></i> নতুন কন্টেন্ট যোগ করুন</button></div>
+                
+                <div class="content-category-container">
+                    <div class="table-header" style="background-color: var(--background-light); border-radius: 8px; border-bottom-left-radius: 0; border-bottom-right-radius: 0;"><h3>মুভি</h3></div>
+                    <div class="search-bar-container">
+                        <form class="search-form" id="movie-search-form" novalidate>
+                            <input type="search" id="movie-search-input" class="form-control" placeholder="মুভি সার্চ করুন...">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                        </form>
+                    </div>
+                    <div class="search-results-container" id="movie-search-results"></div>
+                    <div id="movie-content-groups"></div>
+                </div>
+
+                <div class="content-category-container">
+                    <div class="table-header" style="background-color: var(--background-light); border-radius: 8px; border-bottom-left-radius: 0; border-bottom-right-radius: 0;"><h3>ওয়েব সিরিজ</h3></div>
+                     <div class="search-bar-container">
+                        <form class="search-form" id="web-series-search-form" novalidate>
+                            <input type="search" id="web-series-search-input" class="form-control" placeholder="ওয়েব সিরিজ সার্চ করুন...">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                        </form>
+                    </div>
+                    <div class="search-results-container" id="web-series-search-results"></div>
+                    <div id="web-series-content-groups"></div>
+                </div>
+
+                <div class="content-category-container">
+                    <div class="table-header" style="background-color: var(--background-light); border-radius: 8px; border-bottom-left-radius: 0; border-bottom-right-radius: 0;"><h3>অ্যানিমে সিরিজ</h3></div>
+                     <div class="search-bar-container">
+                        <form class="search-form" id="anime-series-search-form" novalidate>
+                            <input type="search" id="anime-series-search-input" class="form-control" placeholder="অ্যানিমে সিরিজ সার্চ করুন...">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                        </form>
+                    </div>
+                    <div class="search-results-container" id="anime-series-search-results"></div>
+                    <div id="anime-series-content-groups"></div>
+                </div>
+                 <div class="content-category-container">
+                    <div class="table-header" style="background-color: var(--background-light); border-radius: 8px; border-bottom-left-radius: 0; border-bottom-right-radius: 0;"><h3>ড্রামা</h3></div>
+                     <div class="search-bar-container">
+                        <form class="search-form" id="drama-search-form" novalidate>
+                            <input type="search" id="drama-search-input" class="form-control" placeholder="ড্রামা সার্চ করুন...">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                        </form>
+                    </div>
+                    <div class="search-results-container" id="drama-search-results"></div>
+                    <div id="drama-content-groups"></div>
+                </div>
+
+                <!-- নতুন Inactive কনটেন্ট সেকশন -->
+                <div class="content-category-container">
+                    <div class="table-header" style="background-color: #444; border-radius: 8px;">
+                        <h3><i class="fas fa-eye-slash"></i> Inactive কনটেন্ট</h3>
+                    </div>
+                    <div id="inactive-content-container" style="margin-top: 10px;"></div>
+                </div>
+            </section>
+            <section id="category-management" class="content-panel">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>ক্যাটাগরি ম্যানেজমেন্ট</h1></div>
+                <div class="form-group"><label for="new-category-name">নতুন ক্যাটাগরি যোগ করুন</label><div style="display:flex;gap:10px"><input type="text" id="new-category-name" class="form-control" placeholder="যেমনঃ Action"><button class="btn btn-primary" id="add-category-btn">যোগ করুন</button></div></div>
+                <div class="table-container"><div class="table-header"><h3>বিদ্যমান ক্যাটাগরি</h3></div><ul id="simple-list-container" class="categories-list"></ul></div>
+            </section>
+            <section id="request-management" class="content-panel">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>ইউজার রিকোয়েস্ট</h1></div>
+                <div class="table-container"><table><thead><tr><th>ব্যবহারকারীর নাম</th><th>কন্টেন্টের নাম</th><th>ট্রেইলার</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead><tbody id="requests-table-body"></tbody></table></div>
+            </section>
+            <section id="user-management" class="content-panel">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>ব্যবহারকারী ম্যানেজমেন্ট</h1></div>
+                <div class="table-container"><table><thead><tr><th>আইডি</th><th>নাম</th><th>ইউজারনেম</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
+            </section>
+            <section id="settings-management" class="content-panel">
+                <div class="content-header"><button class="menu-toggle"><i class="fas fa-bars"></i></button><h1>সেটিংস - সোশ্যাল লিঙ্ক</h1></div>
+                <div class="form-group"><label>নতুন সোশ্যাল লিঙ্ক যোগ করুন</label><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px"><input type="url" id="new-social-url" class="form-control" placeholder="Social Media URL"><input type="url" id="new-social-image-url" class="form-control" placeholder="Icon Image URL"></div><button class="btn btn-primary" id="add-social-link-btn">লিঙ্ক যোগ করুন</button></div>
+                <div class="table-container"><div class="table-header"><h3>বিদ্যমান লিঙ্ক</h3></div><ul id="simple-list-container" class="social-links-list"></ul></div>
+            </section>
+        </main>
+        
+        <div id="add-edit-modal" class="modal">
+            <div class="modal-content"><div class="modal-header"><h2 id="modal-title">নতুন কন্টেন্ট</h2><button class="modal-close-btn">&times;</button></div><div class="modal-body"><form id="add-edit-form"><input type="hidden" id="edit-content-id"><div class="form-group"><label for="content-title">শিরোনাম</label><input type="text" id="content-title" class="form-control" required></div><div class="form-group"><label for="content-description">বিবরণ</label><textarea id="content-description" class="form-control"></textarea></div><div class="form-row"><div class="form-group"><label for="content-poster-url">পোস্টার URL</label><input type="url" id="content-poster-url" class="form-control" required></div><div class="form-group"><label for="content-trailer-url">ট্রেইলার URL (YouTube)</label><input type="url" id="content-trailer-url" class="form-control"></div></div><div class="form-row"><div class="form-group"><label for="content-year">বছর</label><input type="number" id="content-year" class="form-control"></div><div class="form-group"><label for="content-rating">রেটিং (10 এর মধ্যে)</label><input type="text" id="content-rating" class="form-control"></div></div><div class="form-row"><div class="form-group"><label for="content-genres">ধরন (Genres, কমা দিয়ে)</label><input type="text" id="content-genres" class="form-control"></div><div class="form-group"><label for="content-language">ভাষা</label><input type="text" id="content-language" class="form-control"></div></div><div class="form-row"><div class="form-group"><label for="content-categories">ক্যাটাগরি</label><select id="content-categories" class="form-control" multiple></select></div><div class="form-group"><label for="content-status">স্ট্যাটাস</label><select id="content-status" class="form-control"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div class="form-group"><label for="content-type">কন্টেন্ট টাইপ</label><select id="content-type" class="form-control"><option value="movie">Movie</option><option value="web-series">Web Series</option><option value="anime-series">Anime Series</option><option value="drama">Drama</option></select></div><div id="movie-links-container" class="dynamic-list-container"><div class="dynamic-list-header"><h4>মুভির ডাউনলোড লিঙ্ক</h4><button type="button" class="btn btn-secondary btn-sm" id="add-movie-link-btn"><i class="fas fa-plus"></i> লিঙ্ক যোগ</button></div><div id="movie-links-list"></div></div>
+                <div id="series-seasons-container" class="dynamic-list-container" style="display:none">
+                    <div class="dynamic-list-header"><h4>সিজন এবং এপিসোড</h4></div>
+                    <div id="seasons-list"></div>
+                    <div style="padding-top: 15px; text-align: right;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="add-season-btn"><i class="fas fa-plus"></i> সিজন যোগ করুন</button>
+                    </div>
+                </div>
+            </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary modal-close-btn">বাতিল</button><button type="submit" form="add-edit-form" class="btn btn-primary" id="save-content-btn">সেভ</button></div></div>
+        </div>
+        <div id="block-user-modal" class="modal">
+            <div class="modal-content" style="max-width:500px"><div class="modal-header"><h2 id="block-modal-title">ব্যবহারকারীকে ব্লক করুন</h2><button class="modal-close-btn">&times;</button></div><div class="modal-body"><form id="block-user-form"><input type="hidden" id="block-user-id"><div class="form-group"><label for="block-duration">ব্লকের সময়কাল (ঘন্টায়)</label><input type="number" id="block-duration" class="form-control" min="0" placeholder="স্থায়ী ব্লকের জন্য খালি রাখুন"></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary modal-close-btn">বাতিল</button><button type="submit" form="block-user-form" class="btn btn-danger">ব্লক করুন</button></div></div>
+        </div>
+    </div>
+
+
+    <!-- Firebase Modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCzSOBVlOJA2rd09z5dGM3Z7m-01JqgUMI",
+          authDomain: "baflix-admin.firebaseapp.com",
+          projectId: "baflix-admin",
+          storageBucket: "baflix-admin.firebasestorage.app",
+          messagingSenderId: "242365922009",
+          appId: "1:242365922009:web:95a4f4c0cf99922165dcc8",
+          measurementId: "G-W5Q3Q8PM55"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const loginContainer = document.getElementById('login-container');
+        const adminContainer = document.getElementById('admin-container');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                loginContainer.style.display = 'none';
+                adminContainer.style.display = 'flex';
+                initializeAdminPanel();
+            } else {
+                loginContainer.style.display = 'flex';
+                adminContainer.style.display = 'none';
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            loginError.style.display = 'none';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login failed:", error);
+                loginError.style.display = 'block';
+            }
+        });
+
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await signOut(auth);
+        });
+
+        function initializeAdminPanel() {
+            const navLinks = document.querySelectorAll(".nav-link");
+            const contentPanels = document.querySelectorAll(".content-panel");
+            const modal = document.getElementById("add-edit-modal");
+            const modalTitle = document.getElementById("modal-title");
+            const addEditForm = document.getElementById("add-edit-form");
+            const addNewContentBtn = document.getElementById("add-new-content-btn");
+            const contentTypeSelect = document.getElementById("content-type");
+            const contentManagementPanel = document.getElementById('content-management');
+            
+            const qualityPresets = ['480p', '720p', '1080p', '1440p (2K)', '2160p (4K)'];
+
+            let allContent = { movie: [], 'web-series': [], 'anime-series': [], drama: [] };
+
+            const sidebar = document.querySelector(".sidebar");
+            const menuToggles = document.querySelectorAll(".menu-toggle");
+            const overlay = document.querySelector(".overlay");
+            const toggleSidebar = () => {
+                sidebar.classList.toggle("open");
+                overlay.classList.toggle("active");
+            };
+            menuToggles.forEach(btn => btn.addEventListener("click", toggleSidebar));
+            overlay.addEventListener("click", toggleSidebar);
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute("data-target");
+                    navLinks.forEach(l => l.classList.remove("active"));
+                    link.classList.add("active");
+                    contentPanels.forEach(panel => {
+                        panel.classList.remove("active");
+                        if (panel.id === targetId) {
+                            panel.classList.add("active");
+                        }
+                    });
+                    if (window.innerWidth < 768) {
+                        toggleSidebar();
+                    }
+                });
+            });
+
+            const openModal = () => modal.classList.add("show");
+            const closeModal = () => modal.classList.remove("show");
+
+            document.querySelectorAll(".modal-close-btn").forEach(btn => btn.addEventListener("click", closeModal));
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            contentTypeSelect.addEventListener("change", () => {
+                const isMovie = contentTypeSelect.value === 'movie';
+                document.getElementById('movie-links-container').style.display = isMovie ? 'block' : 'none';
+                document.getElementById('series-seasons-container').style.display = !isMovie ? 'block' : 'none';
+            });
+
+            const renderGroupedContent = (containerId, contentList) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = "";
+
+                if (!contentList || contentList.length === 0) {
+                    container.innerHTML = `<div style="background-color: var(--background-light); padding: 20px; text-align: center; border-radius: 8px;">এই বিভাগে কোনো কন্টেন্ট নেই।</div>`;
+                    return;
+                }
+
+                const groupedByFirstLetter = contentList.reduce((acc, content) => {
+                    const firstLetter = content.title.charAt(0).toUpperCase();
+                    if (!acc[firstLetter]) {
+                        acc[firstLetter] = [];
+                    }
+                    acc[firstLetter].push(content);
+                    return acc;
+                }, {});
+
+                const sortedLetters = Object.keys(groupedByFirstLetter).sort();
+
+                for (const letter of sortedLetters) {
+                    const items = groupedByFirstLetter[letter];
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'content-group';
+
+                    const tableRows = items.map(content => `
+                        <tr>
+                            <td><img src="${content.posterUrl}" alt="${content.title}" width="50" style="border-radius: 4px;"></td>
+                            <td>${content.title}</td>
+                            <td>${content.downloadCount || 0}</td>
+                            <td><span class="status-${content.status}">${content.status}</span></td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm edit-content-btn" data-id="${content.id}"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger btn-sm delete-content-btn" data-id="${content.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    
+                    groupContainer.innerHTML = `
+                        <button class="group-header">
+                            <span>${letter} (${items.length} টি)</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="group-content">
+                            <div class="table-container" style="margin:0; border-radius:0; border-top: 1px solid #333;">
+                                <table style="min-width: 100%;">
+                                    <tbody>${tableRows}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(groupContainer);
+                }
+            };
+
+            const renderSearchResults = (container, results) => {
+                container.innerHTML = "";
+                if (results.length === 0) {
+                    container.innerHTML = `<div style="background-color: var(--background-light); padding: 20px; text-align: center; border-radius: 8px;">কোনো ফলাফল পাওয়া যায়নি।</div>`;
+                    return;
+                }
+                const tableRows = results.map(content => `
+                    <tr>
+                        <td><img src="${content.posterUrl}" alt="${content.title}" width="50" style="border-radius: 4px;"></td>
+                        <td>${content.title}</td>
+                        <td>${content.downloadCount || 0}</td>
+                        <td><span class="status-${content.status}">${content.status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm edit-content-btn" data-id="${content.id}"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-sm delete-content-btn" data-id="${content.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>পোস্টার</th>
+                                    <th>শিরোনাম</th>
+                                    <th>ডাউনলোড</th>
+                                    <th>স্ট্যাটাস</th>
+                                    <th>অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>`;
+            };
+            
+            const loadContent = async () => {
+                try {
+                    const q = query(collection(db, "movies"), orderBy("title", "asc"));
+                    const querySnapshot = await getDocs(q);
+
+                    allContent = { movie: [], 'web-series': [], 'anime-series': [], drama: [] };
+                    let inactiveContent = [];
+
+                    querySnapshot.forEach(doc => {
+                        const content = { id: doc.id, ...doc.data() };
+                        if (content.status === 'inactive') {
+                            inactiveContent.push(content);
+                        } else if (allContent[content.type]) {
+                            allContent[content.type].push(content);
+                        }
+                    });
+
+                    renderGroupedContent('movie-content-groups', allContent.movie);
+                    renderGroupedContent('web-series-content-groups', allContent['web-series']);
+                    renderGroupedContent('anime-series-content-groups', allContent['anime-series']);
+                    renderGroupedContent('drama-content-groups', allContent.drama);
+                    renderInactiveContent('inactive-content-container', inactiveContent);
+
+                } catch (error) {
+                    console.error("Error loading content:", error);
+                    alert("Failed to load content.");
+                }
+            };
+
+            const renderInactiveContent = (containerId, contentList) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = "";
+
+                if (!contentList || contentList.length === 0) {
+                    container.innerHTML = `<div style="background-color: var(--background-light); padding: 20px; text-align: center; border-radius: 8px;">কোনো inactive কন্টেন্ট নেই।</div>`;
+                    return;
+                }
+
+                const tableRows = contentList.map(content => `
+                    <tr>
+                        <td><img src="${content.posterUrl}" alt="${content.title}" width="50" style="border-radius: 4px;"></td>
+                        <td>${content.title}</td>
+                        <td>${content.type}</td>
+                        <td><span class="status-${content.status}">${content.status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm edit-content-btn" data-id="${content.id}"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-sm delete-content-btn" data-id="${content.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>পোস্টার</th>
+                                    <th>শিরোনাম</th>
+                                    <th>টাইপ</th>
+                                    <th>স্ট্যাটাস</th>
+                                    <th>অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            };
+            
+            addNewContentBtn.addEventListener("click", () => {
+                modalTitle.textContent = "নতুন কন্টেন্ট যোগ করুন";
+                addEditForm.reset();
+                document.getElementById("edit-content-id").value = "";
+                document.getElementById("movie-links-list").innerHTML = "";
+                document.getElementById("seasons-list").innerHTML = "";
+                contentTypeSelect.dispatchEvent(new Event('change'));
+                openModal();
+            });
+            
+            addEditForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const contentId = document.getElementById("edit-content-id").value;
+                const title = document.getElementById("content-title").value.trim();
+
+                // START: Updated feature for duplicate check
+                if (!contentId && title) {
+                    const newTitleLower = title.toLowerCase();
+                    const allContentFlat = [].concat(...Object.values(allContent));
+                    const isDuplicate = allContentFlat.some(content => content.title.toLowerCase() === newTitleLower);
+                    
+                    if (isDuplicate) {
+                        if (!confirm("এই নামের একটি কনটেন্ট আগে থেকেই সিস্টেমে যোগ করা আছে। আপনি কি নিশ্চিতভাবে এটি আবারও যোগ করতে চান?")) {
+                            return; // Stop execution if user cancels
+                        }
+                    }
+                }
+                // END: Updated feature
+
+                const contentData = {
+                    title: title,
+                    description: document.getElementById("content-description").value,
+                    posterUrl: document.getElementById("content-poster-url").value,
+                    trailerUrl: document.getElementById("content-trailer-url").value,
+                    year: Number(document.getElementById("content-year").value),
+                    rating: document.getElementById("content-rating").value,
+                    genres: document.getElementById("content-genres").value,
+                    language: document.getElementById("content-language").value,
+                    categories: Array.from(document.getElementById("content-categories").selectedOptions).map(option => option.value),
+                    status: document.getElementById("content-status").value,
+                    type: document.getElementById("content-type").value,
+                    updatedAt: serverTimestamp()
+                };
+
+                if (contentData.type === 'movie') {
+                    contentData.downloadLinks = [];
+                    document.querySelectorAll('#movie-links-list .dynamic-list-item').forEach(item => {
+                        const name = item.querySelector('.movie-link-name').value;
+                        const url = item.querySelector('.movie-link-url').value;
+                        if (name && url) {
+                            contentData.downloadLinks.push({ name, url });
+                        }
+                    });
+                } else {
+                    contentData.seasons = [];
+                    document.querySelectorAll('#seasons-list > .dynamic-list-item').forEach(seasonItem => {
+                        const season = {
+                            season_number: Number(seasonItem.querySelector('.season-number').value),
+                            episodes: []
+                        };
+                        seasonItem.querySelectorAll('.episodes-list > .dynamic-list-item').forEach(episodeItem => {
+                            const episode = {
+                                episode_number: Number(episodeItem.querySelector('.episode-number').value),
+                                title: episodeItem.querySelector('.episode-title').value,
+                                downloadLinks: []
+                            };
+                            episodeItem.querySelectorAll('.download-links-list .download-link-item').forEach(linkItem => {
+                                const name = linkItem.querySelector('.episode-link-name').value;
+                                const url = linkItem.querySelector('.episode-link-url').value;
+                                if (name && url) {
+                                    episode.downloadLinks.push({ name, url });
+                                }
+                            });
+                            season.episodes.push(episode);
+                        });
+                        contentData.seasons.push(season);
+                    });
+                }
+
+                try {
+                    if (contentId) {
+                        await updateDoc(doc(db, "movies", contentId), contentData);
+                        alert("কন্টেন্ট সফলভাবে আপডেট হয়েছে!");
+                    } else {
+                        contentData.createdAt = serverTimestamp();
+                        contentData.downloadCount = 0;
+                        await addDoc(collection(db, "movies"), contentData);
+                        alert("কন্টেন্ট সফলভাবে যোগ হয়েছে!");
+                    }
+                    closeModal();
+                    loadContent();
+                    loadDashboardStats();
+                } catch (error) {
+                    console.error("Error saving content:", error);
+                    alert("Failed to save content.");
+                }
+            });
+
+            contentManagementPanel.addEventListener("click", async (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+
+                if  {
+                    button.classList.toggle('active');
+                    const content = button.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                    return;
+                }
+                
+                const contentId = ;
+                if (!contentId) return;
+
+                if (button.classList.contains('edit-content-btn')) {
+                    const docRef = doc(db, "movies", contentId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        modalTitle.textContent = "কন্টেন্ট এডিট করুন";
+                        addEditForm.reset();
+                        document.getElementById("edit-content-id").value = contentId;
+                        Object.keys(data).forEach(key => {
+                            const input = document.getElementById(`content-${key.replace('Url', '-url')}`);
+                            if (input) {
+                                input.value = data[key];
+                            }
+                        });
+                        document.getElementById("content-genres").value = data.genres || "";
+                        Array.from(document.getElementById("content-categories").options).forEach(option => {
+                            option.selected = data.categories && data.categories.includes(option.value);
+                        });
+                        
+                        contentTypeSelect.value = data.type;
+                        contentTypeSelect.dispatchEvent(new Event('change'));
+
+                        const                     const list = addEpisodeBtn.closest('.dynamic-list-container').querySelector('.episodes-list');
+                    const newEpisodeNumber = list.children.length + 1;
+                    addEpisodeField(list, newEpisodeNumber);
+                }
+            });
+            
+            const addEpisodeDownloadLinkField = (list, name = '', url = '') => {
+                if (name === '') {
+                    const currentLinksCount = list.children.length;
+                    const quality = qualityPresets[currentLinksCount] || 'Source';
+                    name = `Watch and Download (${quality})`;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'form-row download-link-item';
+                item.style.marginBottom = '10px';
+                item.innerHTML = `
+                <input type="text" class="form-control episode-link-name" placeholder="Link Title" value="${name}">
+                <div style="display:flex; gap: 5px;">
+                    <input type="url" class="form-control episode-link-url" placeholder="URL" value="${url}">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>`;
+                list.appendChild(item);
+            };
+            document.getElementById('seasons-list').addEventListener('click', (e) => {
+                const addLinkBtn = e.target.closest('.add-episode-link-btn');
+                if (addLinkBtn) {
+                    const list = addLinkBtn.closest('.dynamic-list-container').querySelector('.download-links-list');
+                    addEpisodeDownloadLinkField(list);
+                }
+            });
+
+            const categoriesContainer = document.querySelector(".categories-list");
+            const categorySelectForForm = document.getElementById("content-categories");
+            const loadCategories = async () => {
+                try {
+                    const q = query(collection(db, "filters"), orderBy("name"));
+                    const querySnapshot = await getDocs(q);
+                    categoriesContainer.innerHTML = '';
+                    categorySelectForForm.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const category = { id: doc.id, ...doc.data() };
+                        categoriesContainer.insertAdjacentHTML('beforeend', `<li><span>${category.name}</span><button class="btn btn-danger btn-sm delete-category-btn" data-id="${category.id}"><i class="fas fa-trash"></i></button></li>`);
+                        categorySelectForForm.insertAdjacentHTML('beforeend', `<option value="${category.name}">${category.name}</option>`);
+                    });
+                } catch (error) { console.error("Error loading categories:", error); }
+            };
+            document.getElementById("add-category-btn").addEventListener("click", async () => {
+                const input = document.getElementById("new-category-name");
+                const name = input.value.trim();
+                if (name) {
+                    try {
+                        await addDoc(collection(db, "filters"), { name: name });
+                        input.value = "";
+                        loadCategories();
+                    } catch (error) { console.error("Error adding category:", error); }
+                }
+            });
+            categoriesContainer.addEventListener("click", async (e) => {
+                const target = e.target.closest(".delete-category-btn");
+                if (target && confirm("আপনি কি এই ক্যাটাগরিটি ডিলিট করতে চান?")) {
+                    await deleteDoc(doc(db, "filters", target.dataset.id));
+                    loadCategories();
+                }
+            });
+            const requestsTableBody = document.getElementById("requests-table-body");
+            const loadRequests = async () => {
+                try {
+                    const q = query(collection(db, "movieRequests"), orderBy("createdAt", "desc"));
+                    const querySnapshot = await getDocs(q);
+                    requestsTableBody.innerHTML = "";
+                    querySnapshot.forEach(doc => {
+                        const request = { id: doc.id, ...doc.data() };
+                        requestsTableBody.insertAdjacentHTML('beforeend', `<tr><td>${request.userName}</td><td>${request.movieName}</td><td>${request.trailerUrl ? `<a href="${request.trailerUrl}" target="_blank">ট্রেইলার</a>` : 'N/A'}</td><td><span class="status-${request.status}">${request.status}</span></td><td>${request.status === 'pending' ? `<button class="btn btn-success btn-sm complete-request-btn" data-id="${request.id}"><i class="fas fa-check"></i></button>` : ''}<button class="btn btn-danger btn-sm delete-request-btn" data-id="${request.id}"><i class="fas fa-trash"></i></button></td></tr>`);
+                    });
+                } catch(error){ console.error("Error loading requests:", error); }
+            };
+            requestsTableBody.addEventListener("click", async (e) => {
+                const target = e.target.closest('button');
+                if(!target) return;
+                const requestId = target.dataset.id;
+                if(target.classList.contains("complete-request-btn")){
+                    await updateDoc(doc(db, "movieRequests", requestId), { status: "completed" });
+                    loadRequests();
+                    loadDashboardStats();
+                }
+                if(target.classList.contains("delete-request-btn") && confirm("Are you sure?")){
+                    await deleteDoc(doc(db, "movieRequests", requestId));
+                    loadRequests();
+                }
+            });
+            const usersTableBody = document.getElementById("users-table-body");
+            const blockUserModal = document.getElementById("block-user-modal");
+            const loadUsers = async () => {
+                try {
+                    const q = query(collection(db, "telegramUsers"), orderBy("lastSeen", "desc"));
+                    const querySnapshot = await getDocs(q);
+                    usersTableBody.innerHTML = "";
+                    querySnapshot.forEach(doc => {
+                        const user = { id: doc.id, ...doc.data() };
+                        usersTableBody.insertAdjacentHTML('beforeend', `<tr><td>${user.id}</td><td>${user.firstName} ${user.lastName || ''}</td><td>@${user.username || 'N/A'}</td><td><span class="status-${user.status}">${user.status}</span></td><td>${user.status === 'blocked' ? `<button class="btn btn-success btn-sm unblock-user-btn" data-id="${user.id}"><i class="fas fa-unlock"></i></button>` : `<button class="btn btn-danger btn-sm block-user-btn" data-id="${user.id}"><i class="fas fa-ban"></i></button>`}</td></tr>`);
+                    });
+                } catch (error) { console.error("Error loading users:", error); }
+            };
+            usersTableBody.addEventListener("click", async (e) => {
+                const target = e.target.closest('button');
+                if(!target) return;
+                const userId = target.dataset.id;
+                if (target.classList.contains("block-user-btn")) {
+                    document.getElementById("block-user-id").value = userId;
+                    document.getElementById("block-user-form").reset();
+                    blockUserModal.classList.add('show');
+                }
+                if (target.classList.contains("unblock-user-btn")) {
+                    if (confirm("Are you sure you want to unblock this user?")) {
+                        await updateDoc(doc(db, "telegramUsers", userId), { status: "active", unblockAt: null });
+                        loadUsers();
+                    }
+                }
+            });
+            document.getElementById("block-user-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const userId = document.getElementById("block-user-id").value;
+                const durationHours = document.getElementById("block-duration").value;
+                const dataToUpdate = { status: "blocked" };
+                if (durationHours && durationHours > 0) {
+                    dataToUpdate.unblockAt = new Date(Date.now() + (durationHours * 60 * 60 * 1000));
+                } else {
+                    dataToUpdate.unblockAt = null;
+                }
+                await updateDoc(doc(db, "telegramUsers", userId), dataToUpdate);
+                blockUserModal.classList.remove('show');
+                loadUsers();
+            });
+            document.querySelectorAll("#block-user-modal .modal-close-btn").forEach(btn => btn.addEventListener("click", () => blockUserModal.classList.remove('show')));
+            blockUserModal.addEventListener("click", e => { if(e.target === blockUserModal) blockUserModal.classList.remove('show'); });
+            const socialLinksContainer = document.querySelector(".social-links-list");
+            const loadSocialLinks = async () => {
+                try {
+                    const querySnapshot = await getDocs(collection(db, "socialLinks"));
+                    socialLinksContainer.innerHTML = "";
+                    querySnapshot.forEach(doc => {
+                        const link = { id: doc.id, ...doc.data() };
+                        socialLinksContainer.insertAdjacentHTML('beforeend', `<li><span><img src="${link.imageUrl}" width="20" style="margin-right: 10px;"/> ${link.url}</span><button class="btn btn-danger btn-sm delete-social-link-btn" data-id="${link.id}"><i class="fas fa-trash"></i></button></li>`);
+                    });
+                } catch(error) { console.error("Error loading social links:", error); }
+            };
+            document.getElementById("add-social-link-btn").addEventListener("click", async () => {
+                const url = document.getElementById("new-social-url").value.trim();
+                const imageUrl = document.getElementById("new-social-image-url").value.trim();
+                if(!url || !imageUrl){ alert("অনুগ্রহ করে উভয় ফিল্ড পূরণ করুন।"); return; }
+                await addDoc(collection(db, "socialLinks"), { url, imageUrl });
+                document.getElementById("new-social-url").value = '';
+                document.getElementById("new-social-image-url").value = '';
+                loadSocialLinks();
+            });
+            socialLinksContainer.addEventListener("click", async (e) => {
+                const target = e.target.closest('.delete-social-link-btn');
+                if(target && confirm("আপনি কি এই লিঙ্কটি ডিলিট করতে চান?")){
+                    await deleteDoc(doc(db, "socialLinks", target.dataset.id));
+                    loadSocialLinks();
+                }
+            });
+            const loadDashboardStats = async () => {
+                try {
+                    const contentSnapshot = await getDocs(collection(db, "movies"));
+                    const usersSnapshot = await getDocs(collection(db, "telegramUsers"));
+                    const visitsSnapshot = await getDocs(collection(db, "visits"));
+                    const pendingRequestsSnapshot = await getDocs(query(collection(db, "movieRequests"), where("status", "==", "pending")));
+                    
+                    let totalDownloads = 0;
+                    contentSnapshot.forEach(doc => {
+                        totalDownloads += doc.data().downloadCount || 0;
+                    });
+
+                    document.getElementById("total-content-stat").textContent = contentSnapshot.size;
+                    document.getElementById("total-users-stat").textContent = usersSnapshot.size;
+                    document.getElementById("total-visits-stat").textContent = visitsSnapshot.size;
+                    document.getElementById("pending-requests-stat").textContent = pendingRequestsSnapshot.size;
+                    document.getElementById("total-downloads-stat").textContent = totalDownloads;
+                } catch(error) { console.error("Error loading dashboard stats:", error); }
+            };
+            
+            loadDashboardStats();
+            loadContent();
+            loadCategories();
+            loadRequests();
+            loadUsers();
+            loadSocialLinks();
+        }
+    </script>
+</body>
+</html>
