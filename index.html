@@ -130,7 +130,7 @@
             overflow: hidden;
             transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
-            position: relative; /* Added for positioning the language badge */
+            position: relative;
         }
         .movie-poster { width: 100%; aspect-ratio: 2 / 3; background-color: #333; overflow: hidden; }
         .movie-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -437,6 +437,19 @@
     <div id="no-movies-message" style="text-align: center; color: var(--text-secondary); margin-top: 50px; display: none;">
         <p>No content found. Please add content from the admin panel.</p>
     </div>
+    
+    <!-- Block Page -->
+    <div id="block-page" class="block-page-container" style="display: none;">
+        <i class="fas fa-ban block-icon"></i>
+        <h1>You Are Blocked</h1>
+        <p class="block-reason">You have been temporarily blocked by the administrator.</p>
+        <div id="countdown-container" class="countdown-container" style="display: none;">
+            <p>You can access again after:</p>
+            <div id="countdown-timer">00:00:00</div>
+        </div>
+        <p class="unblock-info">If you think this is a mistake, please contact support.</p>
+    </div>
+
 
     <!-- Details Modal -->
     <div id="details-modal" class="modal-overlay">
@@ -501,7 +514,7 @@
     <!-- Firebase Modular SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, increment, serverTimestamp, query, where, orderBy, startAfter, limit, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, increment, serverTimestamp, query, where, orderBy, startAfter, limit, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCzSOBVlOJA2rd09z5dGM3Z7m-01JqgUMI",
@@ -534,11 +547,10 @@
             let currentlyLoadedMovies = [];
             let isFetchingMore = false;
             let currentFilter = 'All';
-            let currentSort = 'updatedAt_desc'; // ডিফল্ট সর্টিং
+            let currentSort = 'updatedAt_desc';
             let lastVisible = null;
             const MOVIES_PER_PAGE = 20;
 
-            // Disable context menu on the entire page
             document.body.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
             });
@@ -636,8 +648,6 @@
                     let allMoviesForSearch = moviesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     skeletonLoader.style.display = 'none';
                     
-                    // The category filter is intentionally removed from search to allow global searching.
-
                     const filteredMovies = allMoviesForSearch.filter(movie =>
                         movie.title.toLowerCase().includes(searchTerm) ||
                         (movie.genres && movie.genres.toLowerCase().includes(searchTerm)) ||
@@ -683,7 +693,6 @@
                     let languageBadgeHTML = movie.language ? `<div class="language-badge">${movie.language}</div>` : '';
 
                     if (isListView) {
-                        // List view for search results
                         cardHTML = `
                             <div class="movie-poster">
                                 ${languageBadgeHTML}
@@ -698,7 +707,6 @@
                                 <p class="movie-year"><b>Year:</b> ${movie.year || 'N/A'}</p>
                             </div>`;
                     } else {
-                        // Grid view for browsing
                         cardHTML = `
                             ${languageBadgeHTML}
                             <div class="movie-poster"><img src="${movie.posterUrl}" alt="${movie.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450/222/fff?text=Error'"></div>
@@ -862,7 +870,6 @@
                 const botUsername = "Baflix_Bot"; 
                 const deepLink = `https://t.me/${botUsername}?startapp=movie_${movie.id}`;
 
-                // <<< START: Updated Share and Copy Logic >>>
                 const shareMessage = `🎬 "${movie.title}" দেখুন এখন Baflix-এ!\n\nদেখার জন্য নিচের লিঙ্কে ক্লিক করুন 👇`;
                 const fullTextToCopy = `${shareMessage}\n${deepLink}`;
 
@@ -880,9 +887,7 @@
                 copyBtn.innerHTML = `<i class="fas fa-copy"></i> Copy Link`;
                 copyBtn.onclick = (e) => copyToClipboard(fullTextToCopy, e.currentTarget);
                 actionsContainer.appendChild(copyBtn);
-                // <<< END: Updated Share and Copy Logic >>>
 
-                // For Movies
                 if (movie.type === 'movie' && movie.downloadLinks && movie.downloadLinks.length > 0) {
                      const linksWrapper = document.createElement('div');
                     movie.downloadLinks.forEach(link => {
@@ -902,7 +907,6 @@
                     });
                     downloadsContainer.appendChild(linksWrapper);
                 } 
-                // For Series (Web Series, Drama, Anime)
                 else if (movie.seasons && movie.seasons.length > 0) {
                     movie.seasons.sort((a, b) => a.season_number - b.season_number).forEach(season => {
                         
@@ -971,7 +975,6 @@
                 updateBackButton();
             };
             
-            // Single delegated event listener for season accordions
             document.getElementById('modal-downloads').addEventListener('click', function(e) {
                 const header = e.target.closest('.season-accordion-header');
                 if (header) {
@@ -1058,7 +1061,6 @@
                 };
 
                 try {
-                    // Removed automatic Telegram user data collection
                     await addDoc(collection(db, 'movieRequests'), requestData);
                     alert('Your content request has been sent successfully!');
                     movieRequestForm.reset();
@@ -1072,7 +1074,88 @@
                 }
             });
 
+            const showBlockPage = (unblockTimestamp) => {
+                document.querySelector('header').style.display = 'none';
+                document.querySelector('.search-container-wrapper').style.display = 'none';
+                document.querySelector('.controls-container').style.display = 'none';
+                document.querySelector('main').style.display = 'none';
+                
+                const blockPage = document.getElementById('block-page');
+                blockPage.style.display = 'flex';
+
+                if (unblockTimestamp) {
+                    document.getElementById('countdown-container').style.display = 'block';
+                    const countdownTimer = document.getElementById('countdown-timer');
+                    
+                    const interval = setInterval(() => {
+                        const now = new Date().getTime();
+                        const distance = unblockTimestamp - now;
+
+                        if (distance < 0) {
+                            clearInterval(interval);
+                            window.location.reload();
+                            return;
+                        }
+
+                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                        countdownTimer.textContent = 
+                            ('0' + hours).slice(-2) + ':' + 
+                            ('0' + minutes).slice(-2) + ':' + 
+                            ('0' + seconds).slice(-2);
+                    }, 1000);
+                } else {
+                    document.querySelector('.block-reason').textContent = "You have been permanently blocked by the administrator.";
+                }
+            };
+
+            const saveTelegramUser = async (userData) => {
+                if (!userData || !userData.id) {
+                    return;
+                }
+                try {
+                    const userRef = doc(db, 'telegramUsers', String(userData.id));
+                    const userDocData = {
+                        firstName: userData.first_name || null,
+                        lastName: userData.last_name || null,
+                        username: userData.username || null,
+                        languageCode: userData.language_code || null,
+                        lastSeen: serverTimestamp()
+                    };
+                    await setDoc(userRef, userDocData, { merge: true });
+                } catch (error) {
+                    console.error("Error saving/updating Telegram user:", error);
+                }
+            };
+            
             const initializeApp = async (tgInstance) => {
+                if (tgInstance && tgInstance.initDataUnsafe && tgInstance.initDataUnsafe.user) {
+                    const userData = tgInstance.initDataUnsafe.user;
+                    const userRef = doc(db, 'telegramUsers', String(userData.id));
+
+                    try {
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists() && userSnap.data().status === 'blocked') {
+                            const dbUserData = userSnap.data();
+                            const unblockAt = dbUserData.unblockAt ? dbUserData.unblockAt.toDate() : null;
+
+                            if (unblockAt && unblockAt.getTime() < new Date().getTime()) {
+                                await updateDoc(userRef, { status: 'active', unblockAt: deleteField() });
+                            } else {
+                                showBlockPage(unblockAt ? unblockAt.getTime() : null);
+                                return; 
+                            }
+                        }
+                        
+                        await saveTelegramUser(userData);
+
+                    } catch(e) {
+                        console.error("Error checking user status:", e);
+                    }
+                }
+                
                 if (tgInstance) {
                     tg = tgInstance;
                     tg.expand();
@@ -1083,8 +1166,6 @@
                         if (visibleModal) closeModal(visibleModal);
                     });
                     backButton.hide();
-
-                    // Removed entire user data collection and blocking check logic
                 }
 
                 await Promise.all([
