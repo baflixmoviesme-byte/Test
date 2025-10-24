@@ -130,7 +130,7 @@
             overflow: hidden;
             transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
-            position: relative;
+            position: relative; /* Added for positioning the language badge */
         }
         .movie-poster { width: 100%; aspect-ratio: 2 / 3; background-color: #333; overflow: hidden; }
         .movie-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -437,19 +437,6 @@
     <div id="no-movies-message" style="text-align: center; color: var(--text-secondary); margin-top: 50px; display: none;">
         <p>No content found. Please add content from the admin panel.</p>
     </div>
-    
-    <!-- Block Page -->
-    <div id="block-page" class="block-page-container" style="display: none;">
-        <i class="fas fa-ban block-icon"></i>
-        <h1>You Are Blocked</h1>
-        <p class="block-reason">You have been temporarily blocked by the administrator.</p>
-        <div id="countdown-container" class="countdown-container" style="display: none;">
-            <p>You can access again after:</p>
-            <div id="countdown-timer">00:00:00</div>
-        </div>
-        <p class="unblock-info">If you think this is a mistake, please contact support.</p>
-    </div>
-
 
     <!-- Details Modal -->
     <div id="details-modal" class="modal-overlay">
@@ -510,11 +497,10 @@
         </div>
     </div>
 
-
     <!-- Firebase Modular SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, increment, serverTimestamp, query, where, orderBy, startAfter, limit, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, increment, serverTimestamp, query, where, orderBy, startAfter, limit, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCzSOBVlOJA2rd09z5dGM3Z7m-01JqgUMI",
@@ -547,9 +533,10 @@
             let currentlyLoadedMovies = [];
             let isFetchingMore = false;
             let currentFilter = 'All';
-            let currentSort = 'updatedAt_desc';
+            let currentSort = 'updatedAt_desc'; 
             let lastVisible = null;
             const MOVIES_PER_PAGE = 20;
+            let tg = null; // <<< টেলিগ্রাম অবজেক্ট রাখার জন্য ভ্যারিয়েবল
 
             document.body.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
@@ -647,7 +634,7 @@
                     const moviesSnapshot = await getDocs(q);
                     let allMoviesForSearch = moviesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     skeletonLoader.style.display = 'none';
-                    
+
                     const filteredMovies = allMoviesForSearch.filter(movie =>
                         movie.title.toLowerCase().includes(searchTerm) ||
                         (movie.genres && movie.genres.toLowerCase().includes(searchTerm)) ||
@@ -696,7 +683,7 @@
                         cardHTML = `
                             <div class="movie-poster">
                                 ${languageBadgeHTML}
-                                <img src="${movie.posterUrl}" alt="${movie.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450/222/fff?text=Error'">
+                                <img src="${movie.posterUrl}" alt="${movie.title}" loading="lazy" onerror="this.src='https.via.placeholder.com/300x450/222/fff?text=Error'">
                             </div>
                             <div class="movie-info">
                                 <h3 class="movie-title">${movie.title}</h3>
@@ -813,7 +800,7 @@
                 }
                 return videoId;
             };
-            let tg = null;
+
             let backButton = null;
             function updateBackButton() {
                 if (!backButton) return;
@@ -1060,6 +1047,16 @@
                     createdAt: serverTimestamp()
                 };
 
+                // START: পরিবর্তিত কোড - টেলিগ্রাম ইউজার ডেটা যোগ করা
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const user = tg.initDataUnsafe.user;
+                    requestData.userId = user.id;
+                    requestData.telegramUsername = user.username || 'N/A';
+                    // ব্যবহারকারীর আসল নাম ব্যবহার করতে চাইলে নিচের লাইনটি যোগ করুন
+                    // requestData.userName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+                }
+                // END: পরিবর্তিত কোড
+
                 try {
                     await addDoc(collection(db, 'movieRequests'), requestData);
                     alert('Your content request has been sent successfully!');
@@ -1074,90 +1071,9 @@
                 }
             });
 
-            const showBlockPage = (unblockTimestamp) => {
-                document.querySelector('header').style.display = 'none';
-                document.querySelector('.search-container-wrapper').style.display = 'none';
-                document.querySelector('.controls-container').style.display = 'none';
-                document.querySelector('main').style.display = 'none';
-                
-                const blockPage = document.getElementById('block-page');
-                blockPage.style.display = 'flex';
-
-                if (unblockTimestamp) {
-                    document.getElementById('countdown-container').style.display = 'block';
-                    const countdownTimer = document.getElementById('countdown-timer');
-                    
-                    const interval = setInterval(() => {
-                        const now = new Date().getTime();
-                        const distance = unblockTimestamp - now;
-
-                        if (distance < 0) {
-                            clearInterval(interval);
-                            window.location.reload();
-                            return;
-                        }
-
-                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                        countdownTimer.textContent = 
-                            ('0' + hours).slice(-2) + ':' + 
-                            ('0' + minutes).slice(-2) + ':' + 
-                            ('0' + seconds).slice(-2);
-                    }, 1000);
-                } else {
-                    document.querySelector('.block-reason').textContent = "You have been permanently blocked by the administrator.";
-                }
-            };
-
-            const saveTelegramUser = async (userData) => {
-                if (!userData || !userData.id) {
-                    return;
-                }
-                try {
-                    const userRef = doc(db, 'telegramUsers', String(userData.id));
-                    const userDocData = {
-                        firstName: userData.first_name || null,
-                        lastName: userData.last_name || null,
-                        username: userData.username || null,
-                        languageCode: userData.language_code || null,
-                        lastSeen: serverTimestamp()
-                    };
-                    await setDoc(userRef, userDocData, { merge: true });
-                } catch (error) {
-                    console.error("Error saving/updating Telegram user:", error);
-                }
-            };
-            
-            const initializeApp = async (tgInstance) => {
-                if (tgInstance && tgInstance.initDataUnsafe && tgInstance.initDataUnsafe.user) {
-                    const userData = tgInstance.initDataUnsafe.user;
-                    const userRef = doc(db, 'telegramUsers', String(userData.id));
-
-                    try {
-                        const userSnap = await getDoc(userRef);
-                        if (userSnap.exists() && userSnap.data().status === 'blocked') {
-                            const dbUserData = userSnap.data();
-                            const unblockAt = dbUserData.unblockAt ? dbUserData.unblockAt.toDate() : null;
-
-                            if (unblockAt && unblockAt.getTime() < new Date().getTime()) {
-                                await updateDoc(userRef, { status: 'active', unblockAt: deleteField() });
-                            } else {
-                                showBlockPage(unblockAt ? unblockAt.getTime() : null);
-                                return; 
-                            }
-                        }
-                        
-                        await saveTelegramUser(userData);
-
-                    } catch(e) {
-                        console.error("Error checking user status:", e);
-                    }
-                }
-                
-                if (tgInstance) {
-                    tg = tgInstance;
+            const initializeAppWithTG = async (tgInstance) => {
+                tg = tgInstance; // <<< tg ভ্যারিয়েবল সেট করা
+                if (tg) {
                     tg.expand();
                     
                     backButton = tg.BackButton;
@@ -1210,15 +1126,14 @@
                     return;
                 }
                 const webApp = window.Telegram.WebApp;
-                if (webApp && webApp.initData) {
-                    initializeApp(webApp);
-                } else {
-                    console.log('Not running in Telegram. Initializing in standalone mode.');
-                    initializeApp(null);
-                }
+                // webApp.ready() ব্যবহার করা ভালো অভ্যাস
+                webApp.ready();
+                initializeAppWithTG(webApp);
+
             } catch (error) {
                 console.error('An error occurred during initialization:', error);
-                initializeApp(null);
+                // টেলিগ্রামের বাইরে চললে ফলব্যাক
+                initializeAppWithTG(null);
             }
         });
     </script>
